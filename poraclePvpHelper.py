@@ -488,8 +488,8 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                         else:
                             whchunk_text = ""
 
-                        self.logger.success("Successfully sent payload to webhook{}{}. Stats: {}", whchunk_text,
-                                       whcount_text, len(payload_chunk))
+                        self.logger.success("Successfully sent poraclePvpHelper data to webhook{}{}. Mons sent: {}", 
+                                       whchunk_text, whcount_text, len(payload_chunk))
                 except Exception as e:
                     self.logger.warning("Exception occured while sending webhook: {}", e)
 
