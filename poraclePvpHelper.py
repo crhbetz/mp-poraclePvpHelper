@@ -100,8 +100,11 @@ class Pokemon(PvpBase):
         highest_level = 0
         highest_product = 0
         rank = 4096
-        min_level = self.min_level(limit)
-        max_level = min(self.max_level(limit), lvl)
+        min_level = max(self.min_level(limit), lvl)
+        max_level = self.max_level(limit)
+
+        if min_level > max_level:
+            return 0, 0, 0, 4096
 
         for level in range(int(min_level * 2), int((max_level + 0.5) * 2)):
             level = str(level / float(2)).replace(".0", "")
@@ -308,17 +311,14 @@ class PokemonData(PvpBase):
         stats_great_product = mondata.greatPerfect["product"]
         stats_ultra_product = mondata.ultraPerfect["product"]
 
-        great_product, great_cp, great_level, great_rank = self.getPokemonObject(monster, form).pokemon_rating(1500, atk, de, sta, lvl)
+        great_product, great_cp, great_level, great_rank = self.getPokemonObject(monster, form) \
+                                                               .pokemon_rating(1500, atk, de, sta, lvl)
         great_rating = 100 * (great_product / stats_great_product)
-        ultra_product, ultra_cp, ultra_level, ultra_rank = self.getPokemonObject(monster, form).pokemon_rating(2500, atk, de, sta, lvl)
+        ultra_product, ultra_cp, ultra_level, ultra_rank = self.getPokemonObject(monster, form) \
+                                                               .pokemon_rating(2500, atk, de, sta, lvl)
         ultra_rating = 100 * (ultra_product / stats_ultra_product)
         great_id = monster
         ultra_id = monster
-
-        if float(great_level) < lvl:
-            great_rating = 0
-        if float(ultra_level) < lvl:
-            ultra_rating = 0
 
         return (great_rating, great_id, great_cp, great_level, great_rank,
                 ultra_rating, ultra_id, ultra_cp, ultra_level, ultra_rank)
@@ -331,7 +331,8 @@ class PokemonData(PvpBase):
         evolutions = [self.getUniqueIdentifier(mon, form), ] + self.getAllEvolutions(mon, form)
 
         for evolution in evolutions:
-            grating, gid, gcp, glvl, grank, urating, uid, ucp, ulvl, urank = self.get_pvp_info(atk, de, sta, lvl, identifier=evolution)
+            grating, gid, gcp, glvl, grank, urating, uid, ucp, ulvl, urank = self.get_pvp_info(
+                                                                             atk, de, sta, lvl, identifier=evolution)
             if grank < 4096:
                 greatPayload.append({
                     'rank' : grank,
