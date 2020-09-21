@@ -94,13 +94,14 @@ class Pokemon(PvpBase):
         else:
             return False
 
-    def pokemon_rating(self, limit, atk, de, sta):
+    def pokemon_rating(self, limit, atk, de, sta, lvl):
         highest_rating = 0
         highest_cp = 0
         highest_level = 0
         highest_product = 0
+        rank = 4096
         min_level = self.min_level(limit)
-        max_level = self.max_level(limit)
+        max_level = min(self.max_level(limit), lvl)
 
         for level in range(int(min_level * 2), int((max_level + 0.5) * 2)):
             level = str(level / float(2)).replace(".0", "")
@@ -307,9 +308,9 @@ class PokemonData(PvpBase):
         stats_great_product = mondata.greatPerfect["product"]
         stats_ultra_product = mondata.ultraPerfect["product"]
 
-        great_product, great_cp, great_level, great_rank = self.getPokemonObject(monster, form).pokemon_rating(1500, atk, de, sta)
+        great_product, great_cp, great_level, great_rank = self.getPokemonObject(monster, form).pokemon_rating(1500, atk, de, sta, lvl)
         great_rating = 100 * (great_product / stats_great_product)
-        ultra_product, ultra_cp, ultra_level, ultra_rank = self.getPokemonObject(monster, form).pokemon_rating(2500, atk, de, sta)
+        ultra_product, ultra_cp, ultra_level, ultra_rank = self.getPokemonObject(monster, form).pokemon_rating(2500, atk, de, sta, lvl)
         ultra_rating = 100 * (ultra_product / stats_ultra_product)
         great_id = monster
         ultra_id = monster
