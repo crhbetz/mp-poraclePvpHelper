@@ -1,0 +1,8 @@
+[plugin]
+active = true
+
+[settings]
+target=http://localhost:4201,http://localhost:4202
+interval=30
+ranklength=100
+
