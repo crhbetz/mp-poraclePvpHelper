@@ -410,6 +410,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                                                        self.pluginname, self.description, self.author, self.url,
                                                        description, self.version)
 
+
     def perform_operation(self):
         # do not change this part ▽▽▽▽▽▽▽▽▽▽▽▽▽▽▽
         if not self._pluginconfig.getboolean("plugin", "active", fallback=False):
@@ -505,8 +506,12 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             self.logger.error("no webhook (target) defined in settings - what am I doing here? ;)")
             return False
 
+        if os.path.isfile("{}/data.pickle".format(self._rootdir)):
+            os.rename("{}/data.pickle".format(self._rootdir), "{}/.data.pickle".format(self._rootdir))
+            self.logger.success("migrated data.pickle to .data.pickle (hidden file)")
+
         try:
-            with open("{}/data.pickle".format(self._rootdir), "rb") as datafile:
+            with open("{}/.data.pickle".format(self._rootdir), "rb") as datafile:
                 data = pickle.load(datafile)
         except Exception as e:
             self.logger.warning("exception trying to load pickle'd data, initializing ... exception: {}".format(e))
@@ -515,7 +520,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         if not data:
             data = PokemonData(self.ranklength)
             try:
-                with open("{}/data.pickle".format(os.path.dirname(os.path.abspath(__file__))), "wb") as datafile:
+                with open("{}/.data.pickle".format(os.path.dirname(os.path.abspath(__file__))), "wb") as datafile:
                     pickle.dump(data, datafile, -1)
                     self.logger.success("dumped to pickle file")
             except Exception as e:

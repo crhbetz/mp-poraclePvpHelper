@@ -17,19 +17,19 @@ altogether, or by omitting pokemon from the list of enabled webhook types for a 
 Finally, restart your MAD instance.
 
 ### First start
-On first start, the required data for pvp rank/rating lookups will be calculated locally and saved to a `data.pickle` file. This will take a while.
-Progress should be logged for every 50th mon-form combination. Subsequent starts will load the data from the `data.pickle` file.
+On first start, the required data for pvp rank/rating lookups will be calculated locally and saved to a `.data.pickle` file. This will take a while.
+Progress should be logged for every 50th mon-form combination. Subsequent starts will load the data from the `.data.pickle` file.
 
 ## Re-calculation of data
 To apply certain settings or load new Pokemon / Stats / Forms, a re-calculation of the previously mentioned data will be necessary. Settings that require a recalc
 will be commented accordingly in the `plugin.ini.example` file.
-To achieve a recalc, delete the `data.pickle` file and restart your MAD instance. A new initial calculation will start.
+To achieve a recalc, delete the `.data.pickle` file and restart your MAD instance. A new initial calculation will start.
 
 ## Multi-instance setup
 This plugin is able to run across multiple MAD instances from the same MAD directory. Settings can be made instance-specific by naming a settings category
 like the `status-name` of your instances. An example can be seen as a comment in the `plugin.ini.example` file.
 
-The `data.pickle` file can be shared across those instances, so only one initial calculation is required.
+The `.data.pickle` file can be shared across those instances, so only one initial calculation is required.
 
 # A little disclaimer
 I don't think it's the scanners job to provide this data. I think these are things that should happen in the front-end, like in
