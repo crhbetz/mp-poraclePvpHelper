@@ -13,6 +13,7 @@ from enum import Enum
 import requests
 from mapadroid.utils.logging import get_logger, LoggerEnums
 
+
 def parseEnumProto(url, name):
     r = requests.get(url)
     enumDict = {}
@@ -21,10 +22,11 @@ def parseEnumProto(url, name):
             enumDict[line.split("=")[0].strip()] = line.split("=")[1].replace(";", "").strip()
     return Enum(name, enumDict)
 
+
 PokemonId = parseEnumProto("https://raw.githubusercontent.com/Furtif/POGOProtos/master/src/"
-        "POGOProtos/Enums/PokemonId.proto", "PokemonId")
+                           "POGOProtos/Enums/PokemonId.proto", "PokemonId")
 Form = parseEnumProto("https://raw.githubusercontent.com/Furtif/POGOProtos/master/src/"
-        "POGOProtos/Enums/Form.proto", "Form")
+                      "POGOProtos/Enums/Form.proto", "Form")
 
 
 class PvpBase():
@@ -47,7 +49,7 @@ class PvpBase():
 
 class Pokemon(PvpBase):
     def __init__(self, num: int, form: int, atk: int, de: int, sta: int,
-            evolutions: list, ranklength: int):
+                 evolutions: list, ranklength: int):
         super(Pokemon, self).__init__()
         self.num = num
         self.form = form
@@ -57,7 +59,6 @@ class Pokemon(PvpBase):
         self.evolutions = evolutions
         self.ranklength = ranklength
         self.logger = get_logger(LoggerEnums.plugin)
-
 
         self.products = {}
         self.greatPerfect, self.greatLowest = self._spreads(1500)
@@ -79,9 +80,7 @@ class Pokemon(PvpBase):
 
     def calculate_cp(self, atk, de, sta, lvl):
         lvl = str(lvl).replace(".0", "")
-        cp = ((self.atk + atk) * sqrt(self.de + de) *
-              sqrt(self.sta + sta) * (self.cp_multipliers[str(lvl)]**2)
-              / 10)
+        cp = ((self.atk + atk) * sqrt(self.de + de) * sqrt(self.sta + sta) * (self.cp_multipliers[str(lvl)]**2) / 10)
         return int(cp)
 
     def max_cp(self):
@@ -112,8 +111,7 @@ class Pokemon(PvpBase):
             if not cp > limit:
                 attack = (self.atk + atk) * self.cp_multipliers[str(level)]
                 defense = (self.de + de) * self.cp_multipliers[str(level)]
-                stamina = int(((self.sta + sta) *
-                               (self.cp_multipliers[str(level)])))
+                stamina = int(((self.sta + sta) * (self.cp_multipliers[str(level)])))
                 product = attack * defense * stamina
                 if product > highest_rating:
                     highest_rating = product
@@ -122,7 +120,7 @@ class Pokemon(PvpBase):
                     highest_product = product
         try:
             rank = self.products[limit].index(highest_product) + 1
-        except:
+        except Exception:
             rank = 4096
         return highest_rating, highest_cp, highest_level, rank
 
@@ -145,7 +143,7 @@ class Pokemon(PvpBase):
     def _spreads(self, limit):
         smallest = {"product": 999999999}
         highest = {"product": 0}
-        if not limit in self.products:
+        if limit not in self.products:
             self.products[limit] = []
 
         min_level = self.min_level(limit)
@@ -207,14 +205,13 @@ class PokemonData(PvpBase):
         self.PokemonId = PokemonId
         self.Form = Form
         gmfile = requests.get("https://raw.githubusercontent.com/pokemongo-dev-contrib/pokemongo-game-master/"
-            "master/versions/1595879989869/GAME_MASTER.json")
+                              "master/versions/1595879989869/GAME_MASTER.json")
         templates = gmfile.json()["itemTemplate"]
 
         i = 0
         for template in templates:
-            if (template["templateId"] and template["templateId"].startswith("V") and 
-              not template["templateId"].startswith("VS") and
-              "POKEMON" in template["templateId"]):
+            if (template["templateId"] and template["templateId"].startswith("V")
+                    and not template["templateId"].startswith("VS") and "POKEMON" in template["templateId"]):
                 if i > 0 and i % 50 == 0:
                     self.logger.success("processed {} pokemon templates ...".format(i))
                 i += 1
@@ -227,7 +224,7 @@ class PokemonData(PvpBase):
                             evoId = self.PokemonId[evo["evolution"]].value
                             try:
                                 formId = self.Form[evo["form"]].value
-                            except:
+                            except Exception:
                                 formId = self.Form["{}_NORMAL".format(evo["evolution"])].value
                             evolution.append("{}-{}".format(evoId, formId))
                     except KeyError:
@@ -239,12 +236,12 @@ class PokemonData(PvpBase):
                         name = moninfo["uniqueId"].replace("_FEMALE", "").replace("_MALE", "")
                         form = self.Form["{}_NORMAL".format(name)].value
                     mon = Pokemon(self.PokemonId[moninfo["uniqueId"]].value,
-                            form,
-                            stats["baseAttack"],
-                            stats["baseDefense"],
-                            stats["baseStamina"],
-                            evolution,
-                            self.ranklength)
+                                  form,
+                                  stats["baseAttack"],
+                                  stats["baseDefense"],
+                                  stats["baseStamina"],
+                                  evolution,
+                                  self.ranklength)
                     self.add(mon)
                     self.logger.debug("processed template {}".format(template["templateId"]))
                 except Exception as e:
@@ -276,7 +273,7 @@ class PokemonData(PvpBase):
         allEvolutions = []
         try:
             nextEvolution = self.getPokemonObject(mon, form).getEvolution()
-        except:
+        except Exception:
             nextEvolution = False
         while nextEvolution:
             for evolution in nextEvolution:
@@ -285,7 +282,7 @@ class PokemonData(PvpBase):
                 allEvolutions = allEvolutions + furtherEvolutions
             try:
                 nextEvolution = self.data[nextEvolution].getEvolution()
-            except:
+            except Exception:
                 nextEvolution = False
         self.logger.debug("found evolutions: {}".format(allEvolutions))
         return allEvolutions
@@ -334,25 +331,27 @@ class PokemonData(PvpBase):
         evolutions = [self.getUniqueIdentifier(mon, form), ] + self.getAllEvolutions(mon, form)
 
         for evolution in evolutions:
-            grating, gid, gcp, glvl, grank, urating, uid, ucp, ulvl, urank = self.get_pvp_info(
-                                                                             atk, de, sta, lvl, identifier=evolution)
+            grating, gid, gcp, glvl, grank, urating, uid, ucp, ulvl, urank = self.get_pvp_info(atk, de, sta, lvl,
+                                                                                               identifier=evolution)
             if grank < 4096:
-                greatPayload.append({
-                    'rank' : grank,
-                    'percentage': round(grating, 3),
-                    'pokemon': evolution.split("-")[0],
-                    'form': evolution.split("-")[1],
-                    'level': glvl,
-                    'cp': gcp
+                greatPayload.append(
+                    {
+                        'rank': grank,
+                        'percentage': round(grating, 3),
+                        'pokemon': evolution.split("-")[0],
+                        'form': evolution.split("-")[1],
+                        'level': glvl,
+                        'cp': gcp
                     })
             if urank < 4096:
-                ultraPayload.append({
-                    'rank' : urank,
-                    'percentage': round(urating, 3),
-                    'pokemon': evolution.split("-")[0],
-                    'form': evolution.split("-")[1],
-                    'level': ulvl,
-                    'cp': ucp
+                ultraPayload.append(
+                    {
+                        'rank': urank,
+                        'percentage': round(urating, 3),
+                        'pokemon': evolution.split("-")[0],
+                        'form': evolution.split("-")[1],
+                        'level': ulvl,
+                        'cp': ucp
                     })
         return greatPayload, ultraPayload
 
@@ -370,7 +369,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         self.db = self._mad["db_wrapper"]
         self.logger = get_logger(LoggerEnums.plugin)
         self.wh = self._mad["webhook_worker"]
-        
+
         self.statusname = self._mad["args"].status_name
         self._pluginconfig.read(self._rootdir + "/plugin.ini")
         self._versionconfig.read(self._rootdir + "/version.mpl")
@@ -392,7 +391,6 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         self.interval = self._pluginconfig.getint(settings, "interval", fallback=30)
         self.ranklength = self._pluginconfig.getint(settings, "ranklength", fallback=100)
 
-
         self._routes = [
             ("/poraclePvpHelper_manual", self.manual),
         ]
@@ -409,10 +407,9 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                 self._plugin.add_url_rule(route, route.replace("/", ""), view_func=view_func)
 
             for name, link, description in self._hotlink:
-                self._mad['madmin'].add_plugin_hotlink(name, self._plugin.name+"."+link.replace("/", ""),
+                self._mad['madmin'].add_plugin_hotlink(name, self._plugin.name + "." + link.replace("/", ""),
                                                        self.pluginname, self.description, self.author, self.url,
                                                        description, self.version)
-
 
     def perform_operation(self):
         # do not change this part ▽▽▽▽▽▽▽▽▽▽▽▽▽▽▽
@@ -428,7 +425,6 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         poraclePvpHelper.start()
 
         return True
-
 
     def _send_webhook(self, payloads):
         if len(payloads) == 0:
@@ -481,7 +477,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
 
                     if response.status_code != 200:
                         self.logger.warning("Got status code other than 200 OK from webhook destination: {}",
-                                       response.status_code)
+                                            response.status_code)
                     else:
                         if webhook_count > 1:
                             whcount_text = " [wh {}/{}]".format(current_wh_num, webhook_count)
@@ -493,15 +489,13 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                         else:
                             whchunk_text = ""
 
-                        self.logger.success("Successfully sent poraclePvpHelper data to webhook{}{}. Mons sent: {}", 
-                                       whchunk_text, whcount_text, len(payload_chunk))
+                        self.logger.success("Successfully sent poraclePvpHelper data to webhook{}{}. Mons sent: {}",
+                                            whchunk_text, whcount_text, len(payload_chunk))
                 except Exception as e:
                     self.logger.warning("Exception occured while sending webhook: {}", e)
 
                 current_pl_num += 1
             current_wh_num += 1
-
-
 
     def poraclePvpHelper(self):
         self.__last_check = int(time.time())
@@ -538,7 +532,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             time.sleep(10)
         if w > 11:
             self.logger.error("failed trying to access the webhook worker. This plugin needs webhook to be enabled "
-                    "in your config file!")
+                              "in your config file!")
             return False
 
         while True:
@@ -550,11 +544,12 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                     content = mon["message"]
                     try:
                         form = content["form"]
-                    except:
+                    except Exception:
                         form = 0
 
                     great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form, content["individual_attack"],
-                            content["individual_defense"], content["individual_stamina"], content["pokemon_level"])
+                                                          content["individual_defense"], content["individual_stamina"],
+                                                          content["pokemon_level"])
 
                     if len(great) > 0:
                         mon["message"]["pvp_rankings_great_league"] = great
@@ -566,10 +561,8 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             self.__last_check = starttime
             time.sleep(self.interval)
 
-
     @auth_required
     def manual(self):
         return render_template("poraclePvpHelper_manual.html",
                                header="poraclePvpHelper manual", title="poraclePvpHelper manual"
                                )
-
