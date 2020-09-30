@@ -268,6 +268,8 @@ class PokemonData(PvpBase):
         if identifier in self.data:
             return self.data[identifier]
         else:
+            self.logger.error("mon {} form {} seems to be not calculated yet. Please try a recalc or notify the "
+                              "dev :)", mon, form)
             return False
 
     def getAllEvolutions(self, mon, form):
@@ -307,15 +309,16 @@ class PokemonData(PvpBase):
 
         mondata = self.getPokemonObject(monster, form)
 
+        if not mondata:
+            return 0, 0, 0, 0, 4096, 0, 0, 0, 0, 4096
+
         lvl = float(lvl)
         stats_great_product = mondata.greatPerfect["product"]
         stats_ultra_product = mondata.ultraPerfect["product"]
 
-        great_product, great_cp, great_level, great_rank = self.getPokemonObject(monster, form) \
-                                                               .pokemon_rating(1500, atk, de, sta, lvl)
+        great_product, great_cp, great_level, great_rank = mondata.pokemon_rating(1500, atk, de, sta, lvl)
         great_rating = 100 * (great_product / stats_great_product)
-        ultra_product, ultra_cp, ultra_level, ultra_rank = self.getPokemonObject(monster, form) \
-                                                               .pokemon_rating(2500, atk, de, sta, lvl)
+        ultra_product, ultra_cp, ultra_level, ultra_rank = mondata.pokemon_rating(2500, atk, de, sta, lvl)
         ultra_rating = 100 * (ultra_product / stats_ultra_product)
         great_id = monster
         ultra_id = monster
