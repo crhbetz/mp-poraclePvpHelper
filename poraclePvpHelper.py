@@ -616,7 +616,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                             mon["message"]["pvp_rankings_ultra_league"] = ultra
                 self._send_webhook(payload)
 
-            except Exception as e:
+            except Exception:
                 self.logger.opt(exception=True).error("Unhandled exception in poraclePvpHelper! Trying to continue... "
                                                       "Please notify the developer!")
             self.__last_check = starttime
