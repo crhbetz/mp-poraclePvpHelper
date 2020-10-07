@@ -434,7 +434,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
     def _is_update_available(self):
         update_available = None
         try:
-            r = requests.get("https://raw.githubusercontent.com/crhbetz/mp-poraclePvpHelper/master/version.mpla")
+            r = requests.get("https://raw.githubusercontent.com/crhbetz/mp-poraclePvpHelper/master/version.mpl")
             self.github_mpl = configparser.ConfigParser()
             self.github_mpl.read_string(r.text)
             self.available_version = self.github_mpl.get("plugin", "version", fallback=self.version)
