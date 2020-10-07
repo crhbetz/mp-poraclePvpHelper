@@ -426,6 +426,14 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
 
         return True
 
+    # copied from mapadroid/webhook/webhookworker.py
+    def _payload_chunk(self, payload, size):
+        if size == 0:
+            return [payload]
+
+        return [payload[x: x + size] for x in range(0, len(payload), size)]
+
+    # copied from mapadroid/webhook/webhookworker.py + some variables adjusted
     def _send_webhook(self, payloads):
         if len(payloads) == 0:
             self.logger.debug2("Payload empty. Skip sending to webhook.")
@@ -460,7 +468,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             else:
                 self.logger.debug2("Sending to webhook url: {} (Filter: {})", url, sub_types)
 
-            payload_list = [payloads, ]
+            payload_list = self._payload_chunk(payloads, self._mad["args"].webhook_max_payload_size)
 
             current_pl_num = 1
             for payload_chunk in payload_list:
