@@ -11,6 +11,7 @@ import pickle
 from math import sqrt, floor
 from enum import Enum
 import requests
+import configparser
 from mapadroid.utils.logging import get_logger, LoggerEnums
 
 
@@ -424,8 +425,65 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         poraclePvpHelper.daemon = True
         poraclePvpHelper.start()
 
+        updateChecker = Thread(name="poraclePvpHelperUpdates", target=self.update_checker,)
+        updateChecker.daemon = True
+        updateChecker.start()
+
         return True
 
+    def _is_update_available(self):
+        update_available = None
+        try:
+            r = requests.get("https://raw.githubusercontent.com/crhbetz/mp-poraclePvpHelper/master/version.mpl")
+            self.github_mpl = configparser.ConfigParser()
+            self.github_mpl.read_string(r.text)
+            self.available_version = self.github_mpl.get("plugin", "version", fallback=self.version)
+        except Exception:
+            return None
+
+        try:
+            from pkg_resources import parse_version
+            update_available = parse_version(self.version) < parse_version(self.available_version)
+        except Exception:
+            pass
+
+        if update_available is None:
+            try:
+                from distutils.version import LooseVersion
+                update_available = LooseVersion(self.version) < LooseVersion(self.available_version)
+            except Exception:
+                pass
+
+        if update_available is None:
+            try:
+                from packaging import version
+                update_available = version.parse(self.version) < version.parse(self.available_version)
+            except Exception:
+                pass
+
+        return update_available
+
+    def update_checker(self):
+        while True:
+            self.logger.debug("poraclePvpHelper checking for updates ...")
+            result = self._is_update_available()
+            if result:
+                self.logger.warning("An update of poraclePvpHelper from version {} to version {} is available!",
+                                    self.version, self.available_version)
+            elif result is False:
+                self.logger.success("poraclePvpHelper is up-to-date! ({} = {})", self.version, self.available_version)
+            else:
+                self.logger.warning("Failed checking for updates!")
+            time.sleep(3600)
+
+    # copied from mapadroid/webhook/webhookworker.py
+    def _payload_chunk(self, payload, size):
+        if size == 0:
+            return [payload]
+
+        return [payload[x: x + size] for x in range(0, len(payload), size)]
+
+    # copied from mapadroid/webhook/webhookworker.py + some variables adjusted
     def _send_webhook(self, payloads):
         if len(payloads) == 0:
             self.logger.debug2("Payload empty. Skip sending to webhook.")
@@ -460,7 +518,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             else:
                 self.logger.debug2("Sending to webhook url: {} (Filter: {})", url, sub_types)
 
-            payload_list = [payloads, ]
+            payload_list = self._payload_chunk(payloads, self._mad["args"].webhook_max_payload_size)
 
             current_pl_num = 1
             for payload_chunk in payload_list:
@@ -536,28 +594,31 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             return False
 
         while True:
-            starttime = int(time.time())
-            monsFromDb = self.db.webhook_reader.get_mon_changed_since(self.__last_check)
-            payload = self.wh._WebhookWorker__prepare_mon_data(monsFromDb)
-            for mon in payload:
-                if "individual_attack" in mon["message"]:
-                    content = mon["message"]
-                    try:
-                        form = content["form"]
-                    except Exception:
-                        form = 0
+            try:
+                starttime = int(time.time())
+                monsFromDb = self.db.webhook_reader.get_mon_changed_since(self.__last_check)
+                payload = self.wh._WebhookWorker__prepare_mon_data(monsFromDb)
+                for mon in payload:
+                    if "individual_attack" in mon["message"]:
+                        content = mon["message"]
+                        try:
+                            form = content["form"]
+                        except Exception:
+                            form = 0
+                        great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form,
+                                                              content["individual_attack"],
+                                                              content["individual_defense"],
+                                                              content["individual_stamina"],
+                                                              content["pokemon_level"])
+                        if len(great) > 0:
+                            mon["message"]["pvp_rankings_great_league"] = great
+                        if len(ultra) > 0:
+                            mon["message"]["pvp_rankings_ultra_league"] = ultra
+                self._send_webhook(payload)
 
-                    great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form, content["individual_attack"],
-                                                          content["individual_defense"], content["individual_stamina"],
-                                                          content["pokemon_level"])
-
-                    if len(great) > 0:
-                        mon["message"]["pvp_rankings_great_league"] = great
-                    if len(ultra) > 0:
-                        mon["message"]["pvp_rankings_ultra_league"] = ultra
-
-            self._send_webhook(payload)
-
+            except Exception:
+                self.logger.opt(exception=True).error("Unhandled exception in poraclePvpHelper! Trying to continue... "
+                                                      "Please notify the developer!")
             self.__last_check = starttime
             time.sleep(self.interval)
 
