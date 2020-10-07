@@ -11,6 +11,7 @@ import pickle
 from math import sqrt, floor
 from enum import Enum
 import requests
+import configparser
 from mapadroid.utils.logging import get_logger, LoggerEnums
 
 
@@ -424,7 +425,56 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         poraclePvpHelper.daemon = True
         poraclePvpHelper.start()
 
+        updateChecker = Thread(name="poraclePvpHelperUpdates", target=self.update_checker,)
+        updateChecker.daemon = True
+        updateChecker.start()
+
         return True
+
+    def _is_update_available(self):
+        update_available = None
+        try:
+            r = requests.get("https://raw.githubusercontent.com/crhbetz/mp-poraclePvpHelper/master/version.mpla")
+            self.github_mpl = configparser.ConfigParser()
+            self.github_mpl.read_string(r.text)
+            self.available_version = self.github_mpl.get("plugin", "version", fallback=self.version)
+        except Exception:
+            return None
+
+        try:
+            from pkg_resources import parse_version
+            update_available = parse_version(self.version) < parse_version(self.available_version)
+        except Exception:
+            pass
+
+        if update_available is None:
+            try:
+                from distutils.version import LooseVersion
+                update_available = LooseVersion(self.version) < LooseVersion(self.available_version)
+            except Exception:
+                pass
+
+        if update_available is None:
+            try:
+                from packaging import version
+                update_available = version.parse(self.version) < version.parse(self.available_version)
+            except Exception:
+                pass
+
+        return update_available
+
+    def update_checker(self):
+        while True:
+            self.logger.debug("poraclePvpHelper checking for updates ...")
+            result = self._is_update_available()
+            if result:
+                self.logger.warning("An update of poraclePvpHelper from version {} to version {} is available!",
+                                    self.version, self.available_version)
+            elif result is False:
+                self.logger.success("poraclePvpHelper is up-to-date! ({} = {})", self.version, self.available_version)
+            else:
+                self.logger.warning("Failed checking for updates!")
+            time.sleep(3600)
 
     # copied from mapadroid/webhook/webhookworker.py
     def _payload_chunk(self, payload, size):
