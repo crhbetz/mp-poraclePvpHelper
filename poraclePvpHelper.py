@@ -544,28 +544,31 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             return False
 
         while True:
-            starttime = int(time.time())
-            monsFromDb = self.db.webhook_reader.get_mon_changed_since(self.__last_check)
-            payload = self.wh._WebhookWorker__prepare_mon_data(monsFromDb)
-            for mon in payload:
-                if "individual_attack" in mon["message"]:
-                    content = mon["message"]
-                    try:
-                        form = content["form"]
-                    except Exception:
-                        form = 0
+            try:
+                starttime = int(time.time())
+                monsFromDb = self.db.webhook_reader.get_mon_changed_since(self.__last_check)
+                payload = self.wh._WebhookWorker__prepare_mon_data(monsFromDb)
+                for mon in payload:
+                    if "individual_attack" in mon["message"]:
+                        content = mon["message"]
+                        try:
+                            form = content["form"]
+                        except Exception:
+                            form = 0
+                        great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form,
+                                                              content["individual_attack"],
+                                                              content["individual_defense"],
+                                                              content["individual_stamina"],
+                                                              content["pokemon_level"])
+                        if len(great) > 0:
+                            mon["message"]["pvp_rankings_great_league"] = great
+                        if len(ultra) > 0:
+                            mon["message"]["pvp_rankings_ultra_league"] = ultra
+                self._send_webhook(payload)
 
-                    great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form, content["individual_attack"],
-                                                          content["individual_defense"], content["individual_stamina"],
-                                                          content["pokemon_level"])
-
-                    if len(great) > 0:
-                        mon["message"]["pvp_rankings_great_league"] = great
-                    if len(ultra) > 0:
-                        mon["message"]["pvp_rankings_ultra_league"] = ultra
-
-            self._send_webhook(payload)
-
+            except Exception as e:
+                self.logger.opt(exception=True).error("Unhandled exception in poraclePvpHelper! Trying to continue... "
+                                                      "Please notify the developer!")
             self.__last_check = starttime
             time.sleep(self.interval)
 
