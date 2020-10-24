@@ -384,9 +384,10 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
 
         # plugin specific
         if self.statusname in self._pluginconfig:
-            self.logger.success("found statusname specific config!")
+            self.logger.success("Applying specific config for status-name {}!", self.statusname)
             settings = self.statusname
         else:
+            self.logger.info("Using generic settings on instance with status-name {}", self.statusname)
             settings = "settings"
         self.target = self._pluginconfig.get(settings, "target", fallback=None)
         self.interval = self._pluginconfig.getint(settings, "interval", fallback=30)
