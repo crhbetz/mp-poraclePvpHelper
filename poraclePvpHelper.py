@@ -205,9 +205,8 @@ class PokemonData(PvpBase):
         self.data = {}
         self.PokemonId = PokemonId
         self.Form = Form
-        gmfile = requests.get("https://raw.githubusercontent.com/pokemongo-dev-contrib/pokemongo-game-master/"
-                              "master/versions/1595879989869/GAME_MASTER.json")
-        templates = gmfile.json()["itemTemplate"]
+        gmfile = requests.get("https://raw.githubusercontent.com/PokeMiners/game_masters/master/latest/latest.json")
+        templates = gmfile.json()
 
         i = 0
         for template in templates:
@@ -217,7 +216,7 @@ class PokemonData(PvpBase):
                     self.logger.success("processed {} pokemon templates ...".format(i))
                 i += 1
                 try:
-                    moninfo = template["pokemon"]
+                    moninfo = template["data"]["pokemonSettings"]
                     stats = moninfo["stats"]
                     evolution = []
                     try:
@@ -234,9 +233,9 @@ class PokemonData(PvpBase):
                         form = self.Form[moninfo["form"]].value
                     except KeyError:
                         # handle Nidoran ...
-                        name = moninfo["uniqueId"].replace("_FEMALE", "").replace("_MALE", "")
+                        name = moninfo["pokemonId"].replace("_FEMALE", "").replace("_MALE", "")
                         form = self.Form["{}_NORMAL".format(name)].value
-                    mon = Pokemon(self.PokemonId[moninfo["uniqueId"]].value,
+                    mon = Pokemon(self.PokemonId[moninfo["pokemonId"]].value,
                                   form,
                                   stats["baseAttack"],
                                   stats["baseDefense"],
