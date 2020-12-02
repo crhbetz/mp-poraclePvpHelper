@@ -451,6 +451,11 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         self._mad['madmin'].register_plugin(self._plugin)
         # do not change this part △△△△△△△△△△△△△△△
 
+        if not self._mad["args"].webhook:
+            self.logger.error("Webhook worker is required but not enabled. Please set 'webhook' in your config "
+                              "and restart. Stopping the plugin.")
+            return False
+
         # load your stuff now
         self.logger.success("poraclePvpHelper Plugin starting operations ...")
         poraclePvpHelper = Thread(name="poraclePvpHelper", target=self.poraclePvpHelper,)
@@ -619,11 +624,11 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         w = 0
         while not self.wh and w < 12:
             w += 1
-            self.logger.warning("waiting for the webhook worker to be initialized ... do you have webhooks enabled?")
+            self.logger.warning("waiting for the webhook worker to be initialized ...")
             time.sleep(10)
         if w > 11:
-            self.logger.error("failed trying to access the webhook worker. This plugin needs webhook to be enabled "
-                              "in your config file!")
+            self.logger.error("Failed trying to access the webhook worker with webhook enabled. Please contact "
+                              "the developer.")
             return False
 
         while True:
