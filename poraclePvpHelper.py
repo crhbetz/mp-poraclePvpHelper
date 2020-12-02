@@ -221,7 +221,11 @@ class PokemonData(PvpBase):
         i = 0
         for template in templates:
             if (template["templateId"] and template["templateId"].startswith("V")
-                    and not template["templateId"].startswith("VS") and "POKEMON" in template["templateId"]):
+                    and not template["templateId"].startswith("VS") and "POKEMON" in template["templateId"]
+                    and "HOME_FORM_REVERSION" not in template["templateId"]
+                    and "HOME_REVERSION" not in template["templateId"]
+                    and "pokemonSettings" in template["data"] and "stats" in template["data"]["pokemonSettings"]
+                    and "baseAttack" in template["data"]["pokemonSettings"]["stats"]):
                 if i > 0 and i % 50 == 0:
                     self.logger.success("processed {} pokemon templates ...".format(i))
                 i += 1
@@ -239,12 +243,27 @@ class PokemonData(PvpBase):
                             evolution.append("{}-{}".format(evoId, formId))
                     except KeyError:
                         evolution = []
-                    try:
-                        form = self.Form[moninfo["form"]].value
-                    except KeyError:
-                        # handle Nidoran ...
-                        name = moninfo["pokemonId"].replace("_FEMALE", "").replace("_MALE", "")
-                        form = self.Form["{}_NORMAL".format(name)].value
+
+                    form = 0
+                    if "form" in moninfo:
+                        try:
+                            form = self.Form[moninfo["form"]].value
+                        except KeyError:
+                            pass
+                    if form == 0:
+                        candidates = [moninfo["pokemonId"].replace("_FEMALE", "").replace("_MALE", "") + "_NORMAL",
+                                      moninfo["pokemonId"].replace("_FEMALE", "").replace("_MALE", "")]
+                        for name in candidates:
+                            try:
+                                form = self.Form["{}".format(name)].value
+                                break
+                            except KeyError:
+                                form = 0
+
+                    if form == 0:
+                        self.logger.warning("Unable to determine form ID for template {} - fall back to 0",
+                                            template["templateId"])
+
                     mon = Pokemon(self.PokemonId[moninfo["pokemonId"]].value,
                                   form,
                                   stats["baseAttack"],
@@ -335,7 +354,10 @@ class PokemonData(PvpBase):
 
     def getPoraclePvpInfo(self, mon, form, atk, de, sta, lvl):
         if form == 0:
-            form = self.Form["{}_NORMAL".format(self.PokemonId(str(mon)).name)].value
+            try:
+                form = self.Form["{}_NORMAL".format(self.PokemonId(str(mon)).name)].value
+            except KeyError:
+                form = 0
         greatPayload = []
         ultraPayload = []
         evolutions = [self.getUniqueIdentifier(mon, form), ] + self.getAllEvolutions(mon, form)
@@ -615,11 +637,15 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                             form = content["form"]
                         except Exception:
                             form = 0
-                        great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form,
-                                                              content["individual_attack"],
-                                                              content["individual_defense"],
-                                                              content["individual_stamina"],
-                                                              content["pokemon_level"])
+                        try:
+                            great, ultra = data.getPoraclePvpInfo(content["pokemon_id"], form,
+                                                                  content["individual_attack"],
+                                                                  content["individual_defense"],
+                                                                  content["individual_stamina"],
+                                                                  content["pokemon_level"])
+                        except Exception:
+                            self.logger.warning("Failed processing mon #{}-{}. Skipping.", content["pokemon_id"], form)
+                            continue
                         if len(great) > 0:
                             mon["message"]["pvp_rankings_great_league"] = great
                         if len(ultra) > 0:
