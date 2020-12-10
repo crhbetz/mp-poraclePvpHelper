@@ -4,26 +4,45 @@ active = true
 [settings]
 # where to send the webhooks - multiple URLs separated by commas
 target=http://localhost:4201,http://localhost:4202
+
+#####################################################
+### EXAMPLES BELOW SHOW THE DEFAULT / FALLBACK VALUES
+#####################################################
 # interval of checking and sending data
 interval=30
+
 # ranks from 1 to this number will be kept in memory and sent with pvp data
 # larger ranks will be sent as 4096 (worst possible rank)
 # KEEPING ALL RANKS (ranklength=4096) WILL CONSUME ABOUT 1.5GB OF RAM
 # the default of 100 should be already more than enough for any practical use
-# changes to this setting require deleting the data.pickle file to take effect
+# changes to this setting require deleting the .data.pickle file to take effect
 ranklength=100
+
+# maximum pokemon level for pvp calculations
+maxlevel=50
+
+# whether to make all calculations on startup after deleting .data.pickle file
+# or calculating data as needed
+precalc=False
+
+# whether to save calculated data to the .data.pickle file
+# useful for multi-instance settings: only have one instance saving data to avoid
+# file corruption and inconsistencies - the data can still be loaded from all instances
+savedata=True
 
 
 # by using a category named like your status-name (setting in MAD's config.ini)
 # you can set per-instance settings, so if you had two instances
 # with status names testing and live, you could do this:
-# [testing]
+# [one]
 # target=http://localhost:4201,http://localhost:4202
 # interval=30
 # ranklength=100
+# precalc=True
 
-# [live]
+# [two]
 # target=http://localhost:4203
 # interval=15
 # ranklength=50
+# savedata=False
 

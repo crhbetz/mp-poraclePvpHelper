@@ -208,26 +208,44 @@ class Pokemon(PvpBase):
 
 
 class PokemonData(PvpBase):
-    def __init__(self, ranklength):
+    def __init__(self, ranklength, maxlevel, precalc=False):
         super(PokemonData, self).__init__()
         self.logger = get_logger(LoggerEnums.plugin)
-        self.logger.warning("initializing PokemonData, this will take a while ...")
+        self.templates = None
+        self.gmtime = None
+        self._changed = False
         self.ranklength = ranklength
+        self.maxlevel = maxlevel
         self.data = {}
         self.PokemonId = PokemonId
         self.Form = Form
-        gmfile = requests.get("https://raw.githubusercontent.com/PokeMiners/game_masters/master/latest/latest.json")
-        templates = gmfile.json()
+        if precalc:
+            self.logger.warning("initializing PokemonData, this will take a while ...")
+            self.processGameMaster()
+
+    def getGameMaster(self):
+        self.logger.debug2("getGameMaster called")
+        if not self.templates or not self.gmtime or self.gmtime < int(time.time()) - 3600:
+            self.logger.debug("download game master")
+            gmfile = requests.get("https://raw.githubusercontent.com/PokeMiners/game_masters/master/latest/latest.json")
+            self.templates = gmfile.json()
+            self.gmtime = int(time.time())
+
+
+    def processGameMaster(self, recalcIds: list = []):
+        self.getGameMaster()
+        if recalcIds:
+            self.logger.debug(f"trying to calculate {recalcIds}")
 
         i = 0
-        for template in templates:
+        for template in self.templates:
             if (template["templateId"] and template["templateId"].startswith("V")
                     and not template["templateId"].startswith("VS") and "POKEMON" in template["templateId"]
                     and "HOME_FORM_REVERSION" not in template["templateId"]
                     and "HOME_REVERSION" not in template["templateId"]
                     and "pokemonSettings" in template["data"] and "stats" in template["data"]["pokemonSettings"]
                     and "baseAttack" in template["data"]["pokemonSettings"]["stats"]):
-                if i > 0 and i % 50 == 0:
+                if i > 0 and i % 50 == 0 and not recalcIds:
                     self.logger.success("processed {} pokemon templates ...".format(i))
                 i += 1
                 try:
@@ -261,20 +279,24 @@ class PokemonData(PvpBase):
                             except KeyError:
                                 form = 0
 
-                    if form == 0:
+                    if form == 0 and not recalcIds:
                         self.logger.warning("Unable to determine form ID for template {} - fall back to 0",
                                             template["templateId"])
 
-                    mon = Pokemon(self.PokemonId[moninfo["pokemonId"]].value,
-                                  form,
-                                  stats["baseAttack"],
-                                  stats["baseDefense"],
-                                  stats["baseStamina"],
-                                  evolution,
-                                  self.ranklength,
-                                  self.maxlevel)
-                    self.add(mon)
-                    self.logger.debug("processed template {}".format(template["templateId"]))
+                    if not recalcIds or (recalcIds and str(self.PokemonId[moninfo["pokemonId"]].value) in recalcIds):
+                        self.logger.debug(f"calculating {self.PokemonId[moninfo['pokemonId']].value}-{form}")
+                        mon = Pokemon(self.PokemonId[moninfo["pokemonId"]].value,
+                                      form,
+                                      stats["baseAttack"],
+                                      stats["baseDefense"],
+                                      stats["baseStamina"],
+                                      evolution,
+                                      self.ranklength,
+                                      self.maxlevel)
+                        self.add(mon)
+                        self.logger.debug("processed template {}".format(template["templateId"]))
+                    else:
+                        self.logger.debug("skipped template {}".format(template["templateId"]))
                 except Exception as e:
                     self.logger.warning("Exception processing template {}: {} (this is probably ok)".format(
                         template["templateId"], e))
@@ -283,7 +305,15 @@ class PokemonData(PvpBase):
                 continue
 
     def add(self, pokemon: Pokemon):
+        self._changed = True
+        self.logger.debug(f"added {pokemon.ident()}")
         self.data[pokemon.ident()] = pokemon
+
+    def is_changed(self):
+        return self._changed
+
+    def saved(self):
+        self._changed = False
 
     def __str__(self):
         return str(self.data)
@@ -296,8 +326,15 @@ class PokemonData(PvpBase):
         if identifier in self.data:
             return self.data[identifier]
         else:
-            self.logger.error("mon {} form {} seems to be not calculated yet. Please try a recalc or notify the "
-                              "dev :)", mon, form)
+            self.logger.warning("mon {} form {} not in data. Trying to calculate it ...", mon, form)
+            self.processGameMaster(recalcIds=[str(mon),])
+            time.sleep(1)
+            if identifier in self.data:
+                self.logger.success(f"Successfully calculated and added mon {mon} to data")
+                return self.data[identifier]
+            else:
+                self.logger.error("Unable to find or calculate mon {} form {}. Please try a full recalc or notify the "
+                                  "dev :)", mon, form)
             return False
 
     def getAllEvolutions(self, mon, form):
@@ -426,6 +463,8 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         self.interval = self._pluginconfig.getint(settings, "interval", fallback=30)
         self.ranklength = self._pluginconfig.getint(settings, "ranklength", fallback=100)
         self.maxlevel = self._pluginconfig.getint(settings, "maxlevel", fallback=50)
+        self.precalc = self._pluginconfig.getboolean(settings, "precalc", fallback=False)
+        self.saveData = self._pluginconfig.getboolean(settings, "savedata", fallback=True)
 
         self._routes = [
             ("/poraclePvpHelper_manual", self.manual),
@@ -470,6 +509,19 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         updateChecker.start()
 
         return True
+
+    def _pickle_data(self, data):
+        if self.saveData:
+            try:
+                with open("{}/.data.pickle".format(os.path.dirname(os.path.abspath(__file__))), "wb") as datafile:
+                    pickle.dump(data, datafile, -1)
+                    self.logger.success("Saved data to pickle file")
+                    return True
+            except Exception as e:
+                self.logger.warning("Failed saving to pickle file: {}".format(e))
+                return False
+        else:
+            return False
 
     def _is_update_available(self):
         update_available = None
@@ -614,13 +666,12 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
             data = None
 
         if not data:
-            data = PokemonData(self.ranklength)
-            try:
-                with open("{}/.data.pickle".format(os.path.dirname(os.path.abspath(__file__))), "wb") as datafile:
-                    pickle.dump(data, datafile, -1)
-                    self.logger.success("dumped to pickle file")
-            except Exception as e:
-                self.logger.warning("failed saving to pickle file: {}".format(e))
+            data = PokemonData(self.ranklength, self.maxlevel, precalc=self.precalc)
+            self._pickle_data(data)
+
+        if not data:
+            self.logger.error("Failed aquiring PokemonData object! Stopping the plugin.")
+            return False
 
         self.logger.success("PokemonData object aquired")
 
@@ -660,6 +711,10 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                         if len(ultra) > 0:
                             mon["message"]["pvp_rankings_ultra_league"] = ultra
                 self._send_webhook(payload)
+
+                if self.saveData and data.is_changed():
+                    self._pickle_data(data)
+                    data.saved()
 
             except Exception:
                 self.logger.opt(exception=True).error("Unhandled exception in poraclePvpHelper! Trying to continue... "
