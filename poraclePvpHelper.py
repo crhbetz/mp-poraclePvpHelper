@@ -60,7 +60,7 @@ class PvpBase():
 
 class Pokemon(PvpBase):
     def __init__(self, num: int, form: int, atk: int, de: int, sta: int,
-                 evolutions: list, ranklength: int):
+            evolutions: list, ranklength: int, maxlevel: int):
         super(Pokemon, self).__init__()
         self.num = num
         self.form = form
@@ -69,6 +69,7 @@ class Pokemon(PvpBase):
         self.sta = sta
         self.evolutions = evolutions
         self.ranklength = ranklength
+        self.maxlevel = maxlevel
         self.logger = get_logger(LoggerEnums.plugin)
 
         self.products = {}
@@ -95,7 +96,7 @@ class Pokemon(PvpBase):
         return int(cp)
 
     def max_cp(self):
-        return self.calculate_cp(15, 15, 15, 40)
+        return self.calculate_cp(15, 15, 15, self.maxlevel)
 
     def getEvolution(self):
         if self.evolutions:
@@ -137,16 +138,16 @@ class Pokemon(PvpBase):
 
     def max_level(self, limit):
         if not self.max_cp() > limit:
-            return float(40)
-        for x in range(80, 2, -1):
+            return float(self.maxlevel)
+        for x in range(self.maxlevel * 2, 2, -1):
             x = (x * 0.5)
             if self.calculate_cp(0, 0, 0, x) <= limit:
-                return min(x + 1, 40)
+                return min(x + 1, self.maxlevel)
 
     def min_level(self, limit):
         if not self.max_cp() > limit:
-            return float(40)
-        for x in range(80, 2, -1):
+            return float(self.maxlevel)
+        for x in range(self.maxlevel * 2, 2, -1):
             x = (x * 0.5)
             if self.calculate_cp(15, 15, 15, x) <= limit:
                 return max(x - 1, 1)
@@ -270,7 +271,8 @@ class PokemonData(PvpBase):
                                   stats["baseDefense"],
                                   stats["baseStamina"],
                                   evolution,
-                                  self.ranklength)
+                                  self.ranklength,
+                                  self.maxlevel)
                     self.add(mon)
                     self.logger.debug("processed template {}".format(template["templateId"]))
                 except Exception as e:
@@ -423,6 +425,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         self.target = self._pluginconfig.get(settings, "target", fallback=None)
         self.interval = self._pluginconfig.getint(settings, "interval", fallback=30)
         self.ranklength = self._pluginconfig.getint(settings, "ranklength", fallback=100)
+        self.maxlevel = self._pluginconfig.getint(settings, "maxlevel", fallback=50)
 
         self._routes = [
             ("/poraclePvpHelper_manual", self.manual),
