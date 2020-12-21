@@ -18,11 +18,19 @@ from mapadroid.utils.logging import get_logger, LoggerEnums
 def parseEnumProto(url, name):
     r = requests.get(url)
     enumDict = {}
+    found = False
+    internalName = "enum {}".format(name)
     for line in r.iter_lines(decode_unicode=True):
+        if not found:
+            if internalName in line:
+                found = True
+            continue
         if not line.startswith("syntax") and not line.startswith("package") and "=" in line:
             enumDict[line.split("=")[0].strip()] = line.split("=")[1].replace(";", "").strip()
+        if "}" in line:
+            break
     enumDict = addEnumInfo(name, enumDict)
-    return Enum(name, enumDict)
+    return Enum(name.replace("Holo", ""), enumDict)
 
 
 def addEnumInfo(name, enumDict):
@@ -34,10 +42,9 @@ def addEnumInfo(name, enumDict):
     return enumDict
 
 
-PokemonId = parseEnumProto("https://raw.githubusercontent.com/Furtif/POGOProtos/master/src/"
-                           "POGOProtos/Enums/PokemonId.proto", "PokemonId")
-Form = parseEnumProto("https://raw.githubusercontent.com/Furtif/POGOProtos/master/src/"
-                      "POGOProtos/Enums/Form.proto", "Form")
+PokemonId = parseEnumProto("https://raw.githubusercontent.com/Furtif/POGOProtos/master/base/base.proto",
+                           "HoloPokemonId")
+Form = parseEnumProto("https://raw.githubusercontent.com/Furtif/POGOProtos/master/base/base.proto", "Form")
 
 
 class PvpBase():
@@ -60,7 +67,7 @@ class PvpBase():
 
 class Pokemon(PvpBase):
     def __init__(self, num: int, form: int, atk: int, de: int, sta: int,
-            evolutions: list, ranklength: int, maxlevel: int):
+                 evolutions: list, ranklength: int, maxlevel: int):
         super(Pokemon, self).__init__()
         self.num = num
         self.form = form
@@ -231,7 +238,6 @@ class PokemonData(PvpBase):
             self.templates = gmfile.json()
             self.gmtime = int(time.time())
 
-
     def processGameMaster(self, recalcIds: list = []):
         self.getGameMaster()
         if recalcIds:
@@ -327,7 +333,7 @@ class PokemonData(PvpBase):
             return self.data[identifier]
         else:
             self.logger.warning("mon {} form {} not in data. Trying to calculate it ...", mon, form)
-            self.processGameMaster(recalcIds=[str(mon),])
+            self.processGameMaster(recalcIds=[str(mon), ])
             time.sleep(1)
             if identifier in self.data:
                 self.logger.success(f"Successfully calculated and added mon {mon} to data")
@@ -703,8 +709,9 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                                                                   content["individual_defense"],
                                                                   content["individual_stamina"],
                                                                   content["pokemon_level"])
-                        except Exception:
-                            self.logger.warning("Failed processing mon #{}-{}. Skipping.", content["pokemon_id"], form)
+                        except Exception as e:
+                            self.logger.warning("Failed processing mon #{}-{}. Skipping. Error: {}",
+                                                content["pokemon_id"], form, e)
                             continue
                         if len(great) > 0:
                             mon["message"]["pvp_rankings_great_league"] = great
