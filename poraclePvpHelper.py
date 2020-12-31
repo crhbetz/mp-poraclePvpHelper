@@ -258,16 +258,20 @@ class PokemonData(PvpBase):
                     moninfo = template["data"]["pokemonSettings"]
                     stats = moninfo["stats"]
                     evolution = []
-                    try:
-                        for evo in moninfo["evolutionBranch"]:
-                            evoId = self.PokemonId[evo["evolution"]].value
-                            try:
-                                formId = self.Form[evo["form"]].value
-                            except Exception:
-                                formId = self.Form["{}_NORMAL".format(evo["evolution"])].value
-                            evolution.append("{}-{}".format(evoId, formId))
-                    except KeyError:
-                        evolution = []
+                    if "evolutionBranch" in moninfo:
+                        try:
+                            for evo in moninfo["evolutionBranch"]:
+                                evoId = self.PokemonId[evo["evolution"]].value
+                                try:
+                                    formId = self.Form[evo["form"]].value
+                                except Exception:
+                                    try:
+                                        formId = self.Form["{}_NORMAL".format(evo["evolution"])].value
+                                    except Exception:
+                                        formId = 0
+                                evolution.append("{}-{}".format(evoId, formId))
+                        except KeyError:
+                            evolution = []
 
                     form = 0
                     if "form" in moninfo:
