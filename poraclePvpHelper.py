@@ -668,7 +668,8 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                 data = pickle.load(datafile)
         except Exception as e:
             self.logger.debug("exception trying to load pickle'd data: {}".format(e))
-            self.logger.warning("Failed loading previously calculated data - start initialization")
+            add_string = " - start initialization" if self.precalc else " - will calculate as needed"
+            self.logger.warning(f"Failed loading previously calculated data{add_string}")
             data = None
 
         if not data:
