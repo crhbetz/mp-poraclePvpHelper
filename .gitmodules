@@ -1,0 +1,3 @@
+[submodule "PogoPvpData"]
+	path = PogoPvpData
+	url = https://github.com/crhbetz/PogoPvpData.git
