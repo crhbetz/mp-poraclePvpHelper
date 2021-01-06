@@ -3,7 +3,6 @@ from flask import render_template, Blueprint
 from mapadroid.madmin.functions import auth_required
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "PogoPvpData"))
 import time
 import json
 import logging
@@ -11,8 +10,9 @@ from threading import Thread
 import pickle
 import requests
 import configparser
-from mapadroid.utils.logging import get_logger, LoggerEnums
-from pogopvpdata import PokemonData
+from mapadroid.utils.logging import get_logger, LoggerEnums, get_bind_name
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "PogoPvpData"))
+from pogopvpdata import PokemonData  # noqa: E402
 
 
 logger = get_logger(LoggerEnums.plugin)
