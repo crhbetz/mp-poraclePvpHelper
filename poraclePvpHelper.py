@@ -18,24 +18,28 @@ from pogopvpdata import PokemonData  # noqa: E402
 logger = get_logger(LoggerEnums.plugin)
 
 
-class InterceptHandler(logging.Handler):
-    def emit(self, record):
-        # Get corresponding Loguru level if it exists
+class PoracleInterceptHandler(logging.Handler):
+    def __init__(self, *args, **kwargs):
         try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
+            self.log_section = kwargs['log_section']
+            del kwargs['log_section']
+        except KeyError:
+            self.log_section = LoggerEnums.unknown
+        try:
+            self.log_identifier = kwargs['log_identifier']
+            del kwargs['log_identifier']
+        except KeyError:
+            self.log_identifier = LoggerEnums.unknown
+        super().__init__(*args, **kwargs)
+        self.log_identifier = get_bind_name(self.log_section, self.log_identifier)
 
-        # Find caller from where originated the logged message
-        frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+    def emit(self, record):
+        with logger.contextualize(name=self.log_identifier):
+            logger.opt(depth=6, exception=record.exc_info).log(record.levelname, record.getMessage())
 
 
-logging.basicConfig(handlers=[InterceptHandler()], level=0)
+logging.getLogger('pogopvpdata').setLevel(logging.INFO)
+logging.getLogger('pogopvpdata').addHandler(PoracleInterceptHandler())
 
 
 class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
