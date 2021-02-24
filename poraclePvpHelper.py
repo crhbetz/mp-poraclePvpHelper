@@ -80,6 +80,7 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
         self.maxlevel = self._pluginconfig.getint(settings, "maxlevel", fallback=50)
         self.precalc = self._pluginconfig.getboolean(settings, "precalc", fallback=False)
         self.saveData = self._pluginconfig.getboolean(settings, "savedata", fallback=True)
+        self.encid_string = self._pluginconfig.getboolean(settings, "encidstring", fallback=True)
 
         self._routes = [
             ("/poraclePvpHelper_manual", self.manual),
@@ -309,6 +310,8 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                 for mon in payload:
                     if "individual_attack" in mon["message"]:
                         content = mon["message"]
+                        if self.encid_string:
+                            content["encounter_id"] = str(content["encounter_id"])
                         try:
                             form = content["form"]
                         except Exception:
