@@ -1,11 +1,12 @@
 # mp-poraclePvpHelper
 This MAD plugin exists to pass RDM-like PvP data to PoracleJS using webhooks. It targets the PvP Stats Tracking implementation in
-[PoracleJS PR #151](https://github.com/KartulUdus/PoracleJS/pull/151) and complies with its formats.
+[PoracleJS PR #151](https://github.com/KartulUdus/PoracleJS/pull/151) / [PR #206](https://github.com/KartulUdus/PoracleJS/pull/206)
+and complies with its formats, emulating the behaviour of [RDM PR #120](https://github.com/RealDeviceMap/RealDeviceMap/pull/120).
+
+As of version 2.0, the calculations part has been moved to a separate project called [PogoPvpData](https://github.com/crhbetz/PogoPvpData), which is linked in as a submodule.
 
 ## Installation
-Pulling this directly into your MAD/plugins folder *may* cause issues until [MAD PR #1010](https://github.com/Map-A-Droid/MAD/pull/1010)
-is merged. Downloading and distributing `.mp` files for an active project seems a little tedious to me though, so this will be the primary
-way of distribution for this plugin. I may occasionally upload one as a release though.
+This project can now be cloned directly into your MAD/plugins folder. Downloading and distributing `.mp` files for an active project seems a little tedious to me, so this will be the primary way of distribution for this plugin. I may occasionally upload one as a release though.
 
 After installation, the usual procedure for MAD plugins applies. Copy the `plugin.ini.example` to `plugin.ini` and edit it to your personal preferences.
 
@@ -16,11 +17,16 @@ altogether, or by omitting pokemon from the list of enabled webhook types for a 
 
 Finally, restart your MAD instance.
 
-### First start
-On first start, the required data for pvp rank/rating lookups will be calculated locally and saved to a `.data.pickle` file. This will take a while.
-Progress should be logged for every 50th mon-form combination. Subsequent starts will load the data from the `.data.pickle` file.
+## Updating
+
+Updating your installation including the submodule through git will require the following command:
+
+```git pull --recurse-submodules```
+
+`.mp` file installs are updated by uploading a newer `.mp` file.
 
 ## Re-calculation of data
+The plugin saves its `PokemonData` object to a file called `.data.pickle` within the plugin directory to aviod having to repeat the rather heavy calculations for every run of your MAD instance.
 To apply certain settings or load new Pokemon / Stats / Forms, a re-calculation of the previously mentioned data will be necessary. Settings that require a recalc
 will be commented accordingly in the `plugin.ini.example` file.
 To achieve a recalc, delete the `.data.pickle` file and restart your MAD instance. A new initial calculation will start.
