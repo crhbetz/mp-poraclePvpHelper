@@ -3,4 +3,4 @@ pluginname = poraclePvpHelper
 description = Send pvp webhook data like RDM does because it is supported by poracle
 author = Spezus/crhbetz
 url = https://github.com/crhbetz/mp-poraclePvpHelper
-version = 1.3.2
+version = 2.0

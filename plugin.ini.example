@@ -30,6 +30,10 @@ precalc=False
 # file corruption and inconsistencies - the data can still be loaded from all instances
 savedata=True
 
+# send encounter_id as a string instead of as an int to work around parsing issues
+# on poracle's side
+encidstring=True
+
 
 # by using a category named like your status-name (setting in MAD's config.ini)
 # you can set per-instance settings, so if you had two instances
