@@ -321,7 +321,8 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
                                                                   content["individual_attack"],
                                                                   content["individual_defense"],
                                                                   content["individual_stamina"],
-                                                                  content["pokemon_level"])
+                                                                  content["pokemon_level"],
+                                                                  content["gender"])
                         except Exception as e:
                             self.logger.warning("Failed processing mon #{}-{}. Skipping. Error: {}",
                                                 content["pokemon_id"], form, e)
