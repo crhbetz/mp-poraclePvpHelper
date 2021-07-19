@@ -116,6 +116,10 @@ class poraclePvpHelper(mapadroid.utils.pluginBase.Plugin):
 
         # load your stuff now
         self.logger.success("poraclePvpHelper Plugin starting operations ...")
+        self.logger.warning("This plugin will be considered deprecated and not receive further support, fixes or "
+                            "updates after the merge of PoracleJS PR #474, and you should stop using it to send data "
+                            "to PoracleJS after the merge of this PR! (link: "
+                            "https://github.com/KartulUdus/PoracleJS/pull/474")
         poraclePvpHelper = Thread(name="poraclePvpHelper", target=self.poraclePvpHelper,)
         poraclePvpHelper.daemon = True
         poraclePvpHelper.start()

@@ -1,3 +1,8 @@
+# Deprecation warning
+
+This plugin will be considered deprecated and not receive further support, fixes or updates after the merge of [PoracleJS PR #474](https://github.com/KartulUdus/PoracleJS/pull/474),
+and you should stop using it to send data to PoracleJS after the merge of this PR!
+
 # mp-poraclePvpHelper
 This MAD plugin exists to pass RDM-like PvP data to PoracleJS using webhooks. It targets the PvP Stats Tracking implementation in the now merged
 [PoracleJS PR #151](https://github.com/KartulUdus/PoracleJS/pull/151) / [PR #206](https://github.com/KartulUdus/PoracleJS/pull/206)
